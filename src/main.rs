@@ -7,7 +7,7 @@ use plist::Value as PlistValue;
 use regex::Regex;
 use serde_json::Value as JsonValue;
 use serde_yaml::Value as YamlValue;
-use xmltree::{Element};
+use xmltree::{Element, EmitterConfig};
 
 fn main() -> io::Result<()> {
     let input_version = env::var("INPUT_VERSION")
@@ -118,22 +118,17 @@ fn update_xml(version: &String, path: &Path) -> io::Result<()> {
             let new_content = re.replace_all(&content, format!("android:versionName=\"{}\"", version));
             fs::write(path, new_content.as_ref())?;
         }
-        // Microsoft .NET project files
-        else if root.attributes.get("Sdk").map_or(false, |sdk| sdk.contains("Microsoft.NET.Sdk")) {
-            if let Some(version_node) = root.get_mut_child("PropertyGroup").and_then(|pg| pg.get_mut_child("Version")) {
-                version_node.children.clear();
-                version_node.children.push(xmltree::XMLNode::Text(version.clone()));
-                let mut buffer = Vec::new();
-                root.write(&mut buffer).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-                fs::write(path, buffer)?;
-            }
-        }
-        // MSBuild Props
-        else if let Some(version_node) = root.get_mut_child("PropertyGroup").and_then(|pg| pg.get_mut_child("Version")) {
+        // Microsoft .NET project files and MSBuild Props
+        else if let Some(version_node) = root.get_mut_child("PropertyGroup")
+            .and_then(|pg| pg.get_mut_child("Version")) {
+
             version_node.children.clear();
-            version_node.children.push(xmltree::XMLNode::Text(version.clone()));
+            version_node.children.push(xmltree::XMLNode::Text(version.to_string()));
+
             let mut buffer = Vec::new();
-            root.write(&mut buffer).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+            let config = EmitterConfig::new().perform_indent(true).write_document_declaration(true);
+            root.write_with_config(&mut buffer, config).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
             fs::write(path, buffer)?;
         }
     }
