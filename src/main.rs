@@ -25,7 +25,7 @@ fn main() -> io::Result<()> {
         .and_then(|ext| ext.to_str())
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Failed to extract file extension as string"))?;
 
-    let result = match file_extension {
+    match file_extension {
         "xml" | "props" | "csproj" => update_xml(&input_version, path),
         "json" => update_json(&input_version, path),
         "plist" => update_plist(&input_version, path),
@@ -39,10 +39,10 @@ fn main() -> io::Result<()> {
         }
     }
 
-    Ok(result)
+    Ok(())
 }
 
-fn update_yaml(version: &String, path: &Path) -> io::Result<()> {
+fn update_yaml(version: &str, path: &Path) -> io::Result<()> {
     // Read the YAML file
     let contents = fs::read_to_string(path)?;
 
@@ -51,7 +51,7 @@ fn update_yaml(version: &String, path: &Path) -> io::Result<()> {
 
     // Update the version field
     if let Some(map) = doc.as_mapping_mut() {
-        map.insert(YamlValue::String("version".to_string()), YamlValue::String(version.clone()));
+        map.insert(YamlValue::String("version".to_string()), YamlValue::String(version.to_owned()));
     }
 
     // Write the updated YAML back to the file
@@ -60,7 +60,7 @@ fn update_yaml(version: &String, path: &Path) -> io::Result<()> {
 
     Ok(())
 }
-fn update_plist(version: &String, path: &Path) -> io::Result<()> {
+fn update_plist(version: &str, path: &Path) -> io::Result<()> {
     // Open the plist file for reading
     let mut file = File::open(path)?;
     let mut buffer = Vec::new();
@@ -71,7 +71,7 @@ fn update_plist(version: &String, path: &Path) -> io::Result<()> {
 
     // Update the version
     if let PlistValue::Dictionary(ref mut dict) = plist_data {
-        dict.insert("CFBundleShortVersionString".to_string(), PlistValue::String(version.clone()));
+        dict.insert("CFBundleShortVersionString".to_string(), PlistValue::String(version.to_owned()));
     }
 
     // Write back the updated plist
@@ -80,7 +80,7 @@ fn update_plist(version: &String, path: &Path) -> io::Result<()> {
 
     Ok(())
 }
-fn update_json(version: &String, path: &Path) -> io::Result<()> {
+fn update_json(version: &str, path: &Path) -> io::Result<()> {
     // Read the file content
     let file_content = fs::read_to_string(path)?;
 
@@ -89,10 +89,10 @@ fn update_json(version: &String, path: &Path) -> io::Result<()> {
 
     // Update the version
     if let Some(obj) = data.as_object_mut() {
-        obj.insert("version".to_string(), JsonValue::String(version.clone()));
+        obj.insert("version".to_string(), JsonValue::String(version.to_owned()));
         if let Some(packages) = obj.get_mut("packages").and_then(|p| p.as_object_mut()) {
             if let Some(empty_key) = packages.get_mut("").and_then(|p| p.as_object_mut()) {
-                empty_key.insert("version".to_string(), JsonValue::String(version.clone()));
+                empty_key.insert("version".to_string(), JsonValue::String(version.to_owned()));
             }
         }
     }
@@ -105,7 +105,7 @@ fn update_json(version: &String, path: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn update_xml(version: &String, path: &Path) -> io::Result<()> {
+fn update_xml(version: &str, path: &Path) -> io::Result<()> {
     let mut file = File::open(path)?;
     let mut content = String::new();
     file.read_to_string(&mut content)?;
