@@ -9,3 +9,6 @@ regex = "1.9"
 xmltree = "0.11.0"
 serde_yaml = "0.9.34"
 plist = "1.5"
+
+[profile.release]
+strip=true

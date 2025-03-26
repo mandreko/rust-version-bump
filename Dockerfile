@@ -6,4 +6,5 @@ RUN cargo build --release
 
 FROM scratch
 COPY --from=builder /src/target/release/version-bump /app/
+USER 65534
 CMD ["/app/version-bump"]
